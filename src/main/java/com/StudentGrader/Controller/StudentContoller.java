@@ -90,8 +90,11 @@
 
 package com.StudentGrader.Controller;
 
+import java.io.IOException;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -104,56 +107,36 @@ import com.StudentGrader.Repository.Studentrepo;
 import com.StudentGrader.Service.MailSenderService;
 
 import jakarta.mail.MessagingException;
-
 @RequestMapping("/students")
 @RestController
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "https://front-end-student-grader.vercel.app", allowCredentials = "true")
 public class StudentContoller {
 
+	Logger log = LoggerFactory.getLogger(StudentContoller.class);
+	
     @Autowired
     private Studentrepo studentRepository;
 
     @Autowired
     private MailSenderService mailSenderService;
 
-//    @PostMapping("/signup")
-//    public ResponseEntity<?> signup(@RequestBody Student student) throws MessagingException {
-//        Optional<Student> existingStudent = studentRepository.findByEmail(student.getEmail());
-//        if (existingStudent.isPresent()) {
-//            return ResponseEntity.status(HttpStatus.CONFLICT)
-//                    .body("User with email " + student.getEmail() + " already exists.");
-//        }
-//        Student savedStudent = studentRepository.save(student);
-//
-//        // Send welcome email after signup
-//        mailSenderService.sendWelcomeEmail(savedStudent.getEmail(), savedStudent.getName());
-//
-//        System.out.println(student.getEmail() + " registered");
-//        return ResponseEntity.ok(savedStudent);
- //   }
-
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody Student student) {
-
+    public ResponseEntity<?> signup(@RequestBody Student student) throws IOException, MessagingException  {
         Optional<Student> existingStudent = studentRepository.findByEmail(student.getEmail());
-
         if (existingStudent.isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("User with email " + student.getEmail() + " already exists.");
         }
-
         Student savedStudent = studentRepository.save(student);
 
-        try {
-            mailSenderService.sendWelcomeEmail(savedStudent.getEmail(), savedStudent.getName());
-        } catch (Exception e) {
-            System.out.println("Email failed but user registered: " + e.getMessage());
-        }
+        // Send welcome email after signup
+        mailSenderService.sendWelcomeEmail(savedStudent.getEmail(), savedStudent.getName());
 
-        System.out.println(student.getEmail() + " registered");
-
+        log.info("{} registered", student.getEmail());
+//        System.out.println(student.getEmail() + " registered");
         return ResponseEntity.ok(savedStudent);
     }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         Optional<Student> existingStudentOpt = studentRepository.findByEmail(loginRequest.getEmail());
@@ -195,4 +178,3 @@ public class StudentContoller {
         }
     }
 }
-
